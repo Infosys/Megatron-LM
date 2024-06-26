@@ -44,6 +44,7 @@ The following table shows both model (MFU) and hardware (HFU) FLOPs utilization 
       * [Distributed Optimizer](#distributed-optimizer)
       * [FlashAttention](#flashattention)
       * [GPT-3 Example](#gpt-3-example)
+      * [NT-Java-1.1B Extending Pretraining](#nt-java-11b-extending-pretraining)
       * [Retro](#retro)
    * [Evaluation and Tasks](#evaluation-and-tasks)
       * [GPT Text Generation](#gpt-text-generation)
@@ -230,7 +231,27 @@ In `examples/pretrain_gpt3_175B.sh` we have provided an example of how to config
 
 With full global batch size of 1536 on 1024 A100 GPUs, each iteration takes around 32 seconds resulting in 138 teraFLOPs per GPU which is 44% of the theoretical peak FLOPs.
 
+## NT-Java-1.1B Extending Pretraining
 
+The NT-Java-1.1B model is built by extending pretraining on StarCoderBase-1.1B with Java dataset from the [starcoderdata](https://huggingface.co/datasets/bigcode/starcoderdata). The training process for NT-Java-1.1B employs the parameters detailed in the `examples/finetune_javalm.sh` script. The training uses data parallelism mode of training utilizing 6 A100 GPUs. It begins with a learning rate of 10<sup>-4</sup> decreasing to 10<sup>-6</sup> following a cosine scheduler.
+
+To facilitate compatibility with the Megatron-LM training framework, a Megatron format checkpoint was created using the script `tools/convert_hf_mgt.py`, which converts the HuggingFace (HF) checkpoint available on [bigcode/starcoderbase-1b](https://huggingface.co/bigcode/starcoderbase-1b).
+
+```
+python convert_hf_mgt.py \
+    --hf_ckpt=<hf_ckpt_path> \
+    --output_dir=<output_path> \
+    --tensor-model-parallel-size 1 \
+    --pipeline-model-parallel-size 1 \
+    --sequence-parallel \
+    --num-layers 24 \
+    --hidden-size 2048 \
+    --attention-head-type multiquery \
+    --num-attention-heads 16 \
+    --seq-length 8192 \
+    --max-position-embeddings 8192 \
+    --use-flash-attn
+```
 ## Retro
 
 See:
